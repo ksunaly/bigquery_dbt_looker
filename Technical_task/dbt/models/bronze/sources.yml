@@ -1,0 +1,17 @@
+sources:
+  - name: ecommerce 
+    description: ecommerce database
+    loader: Fivetran
+    database: fivetran_ingest
+    schema: ecommerce
+    freshness:
+      warn_after: { count: 24, period: hour }
+      error_after: { count: 48, period: hour }
+    loaded_at_field: _fivetran_synced
+    tables:
+      - name: orders
+        description: table of orders that were created
+      - name: fulfillments
+        description:  key events in the order fulfillment process. 
+      - name: agents
+        description: agents details

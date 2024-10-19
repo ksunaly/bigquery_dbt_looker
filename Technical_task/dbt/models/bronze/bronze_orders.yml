@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: bronze_orders
+    description: table of orders
+    columns:
+      - name: orderid
+        description: unique order identifier
+        data_tests: 
+          - not_null
+          - unique
+      - name: productid
+        description: unique product indentifier
+        data_tests: 
+          - not_null
+          - unique
+      - name: customerid
+        description: customer identifier
+        data_tests:
+          - not_null
+      - name: createdat
+        description: date when the order was created
+        data_tests:
+          - not_null
+      

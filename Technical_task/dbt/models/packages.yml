@@ -1,0 +1,5 @@
+packages:
+  - package: dbt-labs/dbt-utils
+    version: 1.3.0
+  - package: dbt-labs/dbt-expectations
+    version: 0.10.4

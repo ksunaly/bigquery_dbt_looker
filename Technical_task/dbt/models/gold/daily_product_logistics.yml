@@ -1,0 +1,120 @@
+version: 2
+
+models:
+  - name: daily_product_logistics
+    description: "Daily product logistics data combining orders, fulfillments, and agents."
+    columns:
+      - name: date_day
+        description: "The day when the logistics event was recorded."
+        data tests:
+          - not_null
+
+
+      - name: product_id
+        description: "Unique identifier for the product."
+        data tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
+
+      - name: product_name
+        description: "The name of the product."
+        data tests:
+          - not_null
+
+      - name: product_category
+        description: "The category the product belongs to"
+        data tests:
+          - not_null
+
+      - name: product_subcategory
+        description: "A more specific classification within the product category."
+        data tests:
+          - not_null
+
+      - name: avg_days_to_pack
+        description: "The average number of days it took to pack the product."
+        data tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+         
+
+      - name: avg_days_to_ship
+        description: "The average number of days it took to ship the product after it was packed."
+        data tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+         
+
+      - name: avg_days_to_deliver
+        description: "The average number of days it took to deliver the product after it was shipped."
+        data tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+          
+         
+
+      - name: avg_us_days_to_pack
+        description: "The average number of days it took to pack orders for US customers."
+        data tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+          
+         
+
+      - name: avg_us_days_to_ship
+        description: "The average number of days it took to ship orders to US customers."
+        data tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+         
+       
+
+      - name: avg_us_days_to_deliver
+        description: "The average number of days it took to deliver orders to US customers."
+        data tests:
+           - not_null
+           - dbt_utils.expression_is_true:
+              expression: "> 0"
+           
+        
+    
+
+      - name: avg_contractor_days_to_pack
+        description: "The average number of days it took for contractors to pack orders."
+        data tests:
+           - not_null
+           - dbt_utils.expression_is_true:
+              expression: "> 0"
+
+      - name: avg_contractor_days_to_ship
+        description: "The average number of days it took for contractors to ship orders."
+        data tests:
+            - not_null
+            - dbt_utils.expression_is_true:
+              expression: "> 0"
+        
+          
+
+      - name: avg_contractor_days_to_deliver
+        description: "The average number of days it took for contractors to deliver orders."
+        data tests:
+            - not_null
+            - dbt_utils.expression_is_true:
+              expression: "> 0"
+          
+         
+
+      - name: etl_timestamp_utc
+        description: "The timestamp in UTC when the ETL process was executed."
+        data tests:
+          - not_null
+          - unique
+          - dbt_utils.date_is_in_past

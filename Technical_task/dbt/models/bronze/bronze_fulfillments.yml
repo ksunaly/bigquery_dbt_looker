@@ -1,0 +1,35 @@
+version: 2
+
+sources:
+  - name: bronze_fulfillments
+    description: table of fulfillment
+    columns:
+      - name: timestamp
+        description: The timestamp when the fulfillment event occurred
+        data_tests: 
+          - not_null 
+          - dbt_utils.timestamp_is_in_past:  
+          - dbt_utils.date_is_on_or_after:
+              date: "2015-01-01"
+      - name: orderid
+        description: unique order identifier
+        data_tests: 
+          - not_null
+          - relationships:
+              to: ref('bronze_orders')
+              field: orderid
+      - name: event_name
+        description:  type of fulfillment event
+        data_tests:
+          - accepted_values:
+              values: ['order_packaged', 'order_shipped', 'order_delivered']
+      - name: agentid
+        description: agent who handled the order at each stage of fulfillment
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('bronze_agents')  
+              field: agentid
+        
+
+     
