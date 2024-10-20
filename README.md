@@ -51,12 +51,15 @@
 - 3.1 **Original**: 
   ```sql
   {{ config(materialized='table') }} 
-   
+
+  ```
+  
 - **Revised**:
 
 ```sql
 {{ config(materialized='incremental', unique_key='orderid') }}
 
+```
 
 - **Explanation**:  
   Implemented incremental logic allows for processing only the new or changed data, optimizing performance and reducing load times.
