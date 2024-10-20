@@ -51,12 +51,14 @@
 - 3.1 **Original**: 
   ```sql
   {{ config(materialized='table') }} ```
-- **Revised**:
+   ```
+  - **Revised**:
    ```sql
  {{ config(materialized='incremental', unique_key='orderid') }}
 {% if is_incremental() %}
     where createdat > (select max(createdat) from {{ this }})  -- Fetch only updated records
-{% endif %} ```
+{% endif %} 
+```
 
 - **Explanation**  Implemented incrincremental logic allows for processing only the new or changed data, optimizing performance and reducing load times
 
