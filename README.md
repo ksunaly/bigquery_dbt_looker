@@ -10,7 +10,7 @@
   Each stage can have its own purpose, such as raw data processing, transformation, and final reporting.
   This structure not only clarifies the workflow but also makes it easier to troubleshoot and make changes, leading to a more efficient development process.
 - **Action**
-1. Create dbt folder with medallion-architecture:
+   Create dbt folder with medallion-architecture:
    A medallion architecture is a data design pattern used to logically organize data in a lakehouse, with the goal of incrementally and progressively improving the structure and quality of data as it flows through each layer of the architecture (from Bronze ⇒ Silver ⇒ 
    Gold layer tables).
 - `dbt/models/`
@@ -39,7 +39,7 @@
    - It is good idea to add also freshness funciton here.Adding a freshness test to your data pipeline makes sure that the data is current and accurate, which is important for making good decisions. It helps catch stale data and problems early,
    - building trust in the  information.
    -  Freshness tests also act as checks that alert teams when data isn’t updated as expected, helping to meet any rules about how timely data should be. Overall, they improve the quality and reliability of your data
-     ```yaml
+ ```yaml
      sources:
   - name: ecommerce 
     description: ecommerce database
@@ -234,7 +234,67 @@ select
 ```
 
 - **Pre-commit Hook**: Implemented a pre-commit hook to enforce code quality, ensuring each model has a description and passes linting before merging. This ensures models are well-documented and consistent.
-Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
+```yaml
+# Pre-commit that runs locally
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: check-yaml
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: '\.(yaml|yml)$'
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3.11
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/dbt-checkpoint/dbt-checkpoint
+    rev: v2.0.4
+    hooks:
+      - id: check-model-has-description
+      - id: check-model-has-tests-by-group
+        args: ["--tests", "not_null", "--test-cnt", "1", "--"]
+      - id: check-model-has-tests-by-group
+        args:
+          [
+            "--tests",
+            "unique",
+            "unique_combination_of_columns",
+            "--test-cnt",
+            "1",
+            "--",
+          ]
+
+      - id: check-macro-has-description
+        files: ^(macros/).*$
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.1.1
+    hooks:
+      - id: sqlfluff-fix
+        args: [--config, ".sqlfluff", --show-lint-violations]
+        additional_dependencies:
+          ["dbt-core==1.8.7", "dbt-bigquery==1.8.3", "sqlfluff-templater-dbt"]
+
+```
+
+- **GitHub**: Added .github folder with a pull request template for standartization
+```
+  Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
 
 Fixes # (issue)
 
@@ -249,17 +309,49 @@ Please delete options that are not relevant.
 
 ## How Has This Been Tested?
 
-(Provide details about how your changes have been tested, including any relevant information about the testing process, frameworks used, and outcomes.)
 
 ## Screenshots (if applicable):
 
-(If applicable, add screenshots to help explain your changes.)
+If applicable, add screenshots to help explain your changes.
 
-## Additional Changes
+```
 
-- **GitHub Folder**: Added a `.github` folder with a pull request template for standardization.
-- **Workflow Creation**: Created a workflow for the pre-commit hook in GitHub to maintain consistency across team submissions.
+- **Workflow Creation**: Created a workflow for the pre-commit hook in Github to maintain consistency across team submission
+```yaml
+  on:
+  push:
+    branches:
+      - main
+# on:
+#   schedule:
+#     # * is a special character in YAML so you have to quote this string
+#     - cron: "0 */12 * * *"
+obs:
+  permifrost:
+    runs-on:
+      labels: ubuntu-latest
+    defaults:
+      run:
+        working-directory: permifrost
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.4
+        with:
+          fetch-depth: 1
 
+      - name: Build Permifrost
+        run: make build-permifrost
+        env:
+          PERMISSION_BOT_USER: ${{ secrets.PERMISSION_BOT_USER }}
+          PERMISSION_BOT_ACCOUNT: ${{ secrets.PERMISSION_BOT_ACCOUNT }}
+          PERMISSION_BOT_WAREHOUSE: ${{ secrets.PERMISSION_BOT_WAREHOUSE }}
+          PERMISSION_BOT_PASSWORD: ${{ secrets.PERMISSION_BOT_PASSWORD }}
+          PERMISSION_BOT_DATABASE: ${{ secrets.PERMISSION_BOT_DATABASE }}
+          PERMISSION_BOT_ROLE: ${{ secrets.PERMISSION_BOT_ROLE }}
+
+      - name: Apply Permifrost Permissions
+        run: make permifrost-run
+  ```
 
 
 ---
