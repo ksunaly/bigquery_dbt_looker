@@ -50,10 +50,10 @@
 ## 3. Performance
 - 3.1 **Original**: 
   ```sql
-  {{ config(materialized='table') }} ```
+  {{ config(materialized='table') }} 
    ```
   - **Revised**:
-   ```sql
+ 
  {{ config(materialized='incremental', unique_key='orderid') }}
 {% if is_incremental() %}
     where createdat > (select max(createdat) from {{ this }})  -- Fetch only updated records
