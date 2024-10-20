@@ -40,7 +40,7 @@
    - building trust in the  information.
    -  Freshness tests also act as checks that alert teams when data isn’t updated as expected, helping to meet any rules about how timely data should be. Overall, they improve the quality and reliability of your data.
  ```yaml
-     sources:
+   sources:
   - name: ecommerce 
     description: ecommerce database
     loader: Fivetran
@@ -57,7 +57,6 @@
         description:  key events in the order fulfillment process. 
       - name: agents
         description: agents details
-
  ```
     
 **Gold Layer Setup**
@@ -65,13 +64,13 @@
 - Created daily.product.logistics.yml file with description
   
 ## 2. Maintainability
-     - **Original**: Uses `select *`, which can lead to issues if the source tables change.
-     - **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
-     - **Explanation**:  
-    - Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
-    - By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
+      **Original**: Uses `select *`, which can lead to issues if the source tables change.
+      **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
+      **Explanation**:  
+        Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
+        By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
      **Action**
-    - Use column names for each table in each dbt models in select statement
+        Use column names for each table in each dbt models in select statement
 
 ## 3. Performance
 - 3.1 **Original**: It could be wrong strategy for perfomance
