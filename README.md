@@ -52,41 +52,45 @@
   ```sql
   {{ config(materialized='table') }} 
    
-  - **Revised**:
- {{ config(materialized='incremental', unique_key='orderid') }}
+- **Revised**:
 
-```
+```sql
+{{ config(materialized='incremental', unique_key='orderid') }}
 
-- **Explanation**  Implemented incrincremental logic allows for processing only the new or changed data, optimizing performance and reducing load times
 
--3.2 **Original**  in cte joined optimized code
-   ```sql
-    left join fulfillments as packaged
-    on orders.orderid = packaged.order_id
-    left join fulfillments as shipped
-    on orders.orderid = shipped.order_id
-    left join fulfillments as delivered
-    on orders.orderid = delivered.order_id
-    where packaged.event_name = 'order_packaged'
-    and shipped.event_name = 'order_shipped'
-    and delivered.event_name = 'order_delivered'
-    -- set the grain to one record per order
-    group by 1,2,3,4 ```
-)
+- **Explanation**:  
+  Implemented incremental logic allows for processing only the new or changed data, optimizing performance and reducing load times.
+
+### 3.2 Original (in CTE, joined optimized code):
+
+```sql
+LEFT JOIN fulfillments AS packaged
+  ON orders.orderid = packaged.order_id
+LEFT JOIN fulfillments AS shipped
+  ON orders.orderid = shipped.order_id
+LEFT JOIN fulfillments AS delivered
+  ON orders.orderid = delivered.order_id
+WHERE packaged.event_name = 'order_packaged'
+  AND shipped.event_name = 'order_shipped'
+  AND delivered.event_name = 'order_delivered'
+-- set the grain to one record per order
+GROUP BY 1, 2, 3, 4
 
 - **Revised**:
-left join fulfillments as packaged
-on orders.orderid = packaged.orderid
-and packaged.event_name = 'order_packaged' 
-left join fulfillments as shipped
-on orders.orderid = shipped.order_id
-and shipped.event_name = 'order_shipped'
-left join fulfillments as delivered
-on orders.orderid = delivered.order_id
-and delivered.event_name = 'order_delivered'
+
+```sql
+LEFT JOIN fulfillments AS packaged
+  ON orders.orderid = packaged.orderid
+  AND packaged.event_name = 'order_packaged'
+LEFT JOIN fulfillments AS shipped
+  ON orders.orderid = shipped.order_id
+  AND shipped.event_name = 'order_shipped'
+LEFT JOIN fulfillments AS delivered
+  ON orders.orderid = delivered.order_id
+  AND delivered.event_name = 'order_delivered'
 -- set the grain to one record per order
-group by 1,2,3,4
- ```
+GROUP BY 1, 2, 3, 4
+
 
  - **Explanation**:  
 Moving the event name conditions to the join clause enhances performance by filtering records during the join operation, resulting in fewer records processed later in the pipeline
