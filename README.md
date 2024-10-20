@@ -10,20 +10,23 @@
   Each stage can have its own purpose, such as raw data processing, transformation, and final reporting.
   This structure not only clarifies the workflow but also makes it easier to troubleshoot and make changes, leading to a more efficient development process.
   **Action**
-1. Create dbt folder with following structure: 
+1. Create dbt folder with medallion-architecture:
+   A medallion architecture is a data design pattern used to logically organize data in a lakehouse, with the goal of incrementally and progressively improving the structure and quality of data as it flows through each layer of the architecture (from Bronze ⇒ Silver ⇒ 
+   Gold layer tables).
 - `dbt/models/`
   - `bronze/`: contains raw, unprocessed data.
-  - `silver/`: (Optional) Contains cleaned and enriched data.
+  - `silver/`: (Optional) Contains cleaned and enriched data, the data is matched, merged, conformed and cleansed ("just-enough") so that the Silver layer can provide an "Enterprise view"
   - `gold/`: Contains fully processed and ready-for-analysis data.
+    
 **Bronze Layer Setup**
 
-   **SQL Files**:
-   - Create `.sql` files with the names of the tables:
+   **DBT models**:
+   - Create  dbt models for 3 tables:
      - `bronze_orders.sql`
      - `bronze_agents.sql`
      - `bronze_fulfillments.sql`
 
-   - In each `.sql` file, write the SQL code to extract data using the `source` function. Note that you should **not** directly reference the table names in the SQL files; instead, reference the source defined in the `source.yml` file.
+   - In each dbt model, write the SQL code to extract data using the `source` function. Note that you should **not** directly reference the table names in dbt model; instead, reference the source defined in the `source.yml` file.
 
   **YAML Files**:
    - Create a corresponding `.yml` file for each of the tables:
@@ -37,7 +40,7 @@
 **Gold Layer Setup**
 - Moved existing file with sql queries to gold folder
 - Created daily.product.logistics.yml file with description and tests of all columns in final table
-- 
+  
   ## 2. Maintainability
 - **Original**: Uses `select *`, which can lead to issues if the source tables change.
 - **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
@@ -45,19 +48,32 @@
   Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
    By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
    **Action**
-  use column names for each table in each .sql file in select statement
+  use column names for each table in each dbt models in select statement
 
 ## 3. Performance
-- 3.1 **Original**: 
+- 3.1 **Original**: Selected wrong strategy for perfomance
   ```sql
   {{ config(materialized='table') }} 
 
   ```
   
-- **Revised**:
+     **Revised**: Select incremental materialization to imrpove perfomance.
 
 ```sql
-{{ config(materialized='incremental', unique_key='orderid') }}
+{{ config(materialized='incremental') }}
+with
+orders as (
+    -- a raw transactional fact table for orders being placed i.e. created
+    select 
+       orderid, ----added column names instead of *
+       productid,
+       customerid,
+       createdat
+    from {{ ref('bronze_orders') }}  --table is not new, using ref 
+    {% if is_incremental() %}
+       where createdat >= (select max(createdat) - INTERVAL '1day' from {{ this }})  -- Fetch only updated records
+    {% endif %}
+),
 
 ```
 
@@ -105,6 +121,38 @@ Moving the event name conditions to the join clause enhances performance by filt
 ## 4. Data Integrity
 - **Original**: No data quality checks
 - **Revised**: Added data tests to ensure all relationships are valid, helping maintain data integrity in yml.files. Also added `utils` and `expectation` packages.
+Example of tests:
+```yaml
+- name: avg_contractor_days_to_pack
+  description: "The average number of days it took for contractors to pack orders."
+  data tests:
+    - not_null
+    - dbt_utils.expression_is_true:
+        expression: "> 0"
+
+- name: avg_contractor_days_to_ship
+  description: "The average number of days it took for contractors to ship orders."
+  data tests:
+    - not_null
+    - dbt_utils.expression_is_true:
+        expression: "> 0"
+
+- name: avg_contractor_days_to_deliver
+  description: "The average number of days it took for contractors to deliver orders."
+  data tests:
+    - not_null
+    - dbt_utils.expression_is_true:
+        expression: "> 0"
+
+- name: current_timestamp_utc
+  description: "The timestamp in UTC when the ETL process was executed."
+  data tests:
+    - not_null
+    - unique
+    - dbt_utils.date_is_in_past
+
+```
+  
 - **Explanation**:  
   Ensuring data integrity is crucial for reliable reporting and analysis. By adding data quality checks, potential issues such as missing values or broken relationships can be caught early. The addition of `utils` and `expectation` packages enhances this process by providing standardized methods for testing and validation, maintaining trust in the data.
 
