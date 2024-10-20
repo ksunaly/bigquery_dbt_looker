@@ -112,7 +112,7 @@ models:
           
          
 
-      - name: etl_timestamp_utc
+      - name: current_timestamp_utc
         description: "The timestamp in UTC when the ETL process was executed."
         data tests:
           - not_null
