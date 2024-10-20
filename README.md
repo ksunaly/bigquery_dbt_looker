@@ -20,7 +20,7 @@
     
 **Bronze Layer Setup**
 
-   **DBT models**:
+   ***DBT models***:
    - Create  dbt models for 3 tables:
      - `bronze_orders.sql`
      - `bronze_agents.sql`
