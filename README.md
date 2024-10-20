@@ -52,11 +52,11 @@
   ```sql
   {{ config(materialized='table') }}
 - **Revised**:
-  ```sql
-`{{ config(materialized='incremental', unique_key='orderid') }}
-    {% if is_incremental() %}
+ {{ config(materialized='incremental', unique_key='orderid') }}
+{% if is_incremental() %}
     where createdat > (select max(createdat) from {{ this }})  -- Fetch only updated records
-  {% endif %}
+{% endif %}
+
 - **Explanation**  Implemented incrincremental logic allows for processing only the new or changed data, optimizing performance and reducing load times
 
 -3.2 **Original**  in cte joined optimized code
@@ -87,7 +87,7 @@ left join fulfillments as delivered
 on orders.orderid = delivered.order_id
 and delivered.event_name = 'order_delivered'
 -- set the grain to one record per order
-group by 1,2,3,4
+group by 1,2,3,4 ```
 
  - **Explanation**:  
 Moving the event name conditions to the join clause enhances performance by filtering records during the join operation, resulting in fewer records processed later in the pipeline
