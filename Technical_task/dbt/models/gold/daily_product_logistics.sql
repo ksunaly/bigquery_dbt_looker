@@ -14,7 +14,7 @@ orders as (
        createdat
     from {{ ref('bronze_orders') }}  --table is not new, using ref 
     {% if is_incremental() %}
-       where createdat > (select max(createdat) from {{ this }})  -- Fetch only updated records
+       where createdat > (select max(createdat) - INTERVAL '1day' from {{ this }})  -- Fetch only updated records
     {% endif %}
 ),
 
