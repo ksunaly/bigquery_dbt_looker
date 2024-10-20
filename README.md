@@ -33,8 +33,8 @@
      - `bronze_orders.yml`
      - `bronze_agents.yml`
      - `bronze_fulfillments.yml`
-.
-  -***Source Definition***:
+
+  ***Source Definition***:
    - Create a `source.yml` file. This file contains the source definitions for all raw tables, pointing to where the raw data is located in your data warehouse. Centralizing your source configuration helps with data lineage and documentation.
    - It is good idea to add also freshness funciton here.Adding a freshness test to your data pipeline makes sure that the data is current and accurate, which is important for making good decisions. It helps catch stale data and problems early,
    - building trust in the  information.
@@ -80,7 +80,7 @@
 
   ```
   
-     **Revised**: Select incremental materialization to imrpove perfomance.
+    **Revised**: Select incremental materialization to imrpove perfomance.
 
 ```sql
 {{ config(materialized='incremental') }}
