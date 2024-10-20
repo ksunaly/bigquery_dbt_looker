@@ -50,12 +50,13 @@
 ## 3. Performance
 - 3.1 **Original**: 
   ```sql
-  {{ config(materialized='table') }}
+  {{ config(materialized='table') }} ```
 - **Revised**:
+   ```sql
  {{ config(materialized='incremental', unique_key='orderid') }}
 {% if is_incremental() %}
     where createdat > (select max(createdat) from {{ this }})  -- Fetch only updated records
-{% endif %}
+{% endif %} ```
 
 - **Explanation**  Implemented incrincremental logic allows for processing only the new or changed data, optimizing performance and reducing load times
 
@@ -72,7 +73,7 @@ joined as (
     and shipped.event_name = 'order_shipped'
     and delivered.event_name = 'order_delivered'
     -- set the grain to one record per order
-    group by 1,2,3,4
+    group by 1,2,3,4 ```
 )
 
 - **Revised**:
