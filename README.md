@@ -69,7 +69,7 @@
       **Explanation**:  
         Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
         By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
-     **Action**
+      **Action**
         Use column names for each table in each dbt models in select statement
 
 ## 3. Performance
@@ -356,6 +356,47 @@ obs:
 ---
 
 ## Looker Explorer File
+- **Original**: No structure at all
+- **Revised** Structure your project folder
+- **Explanation* Organisation within Looker is key. An organised Looker instance will provide more value to your business. Therefore, we recommend you have individual folders for each LookML object. For example, keep all view files in a “views” folder, explore files in an “explores” folder, model files in a “models” folder.
+- `looker`
+  - `explores/`
+  - `views/`
+  - `models/`
+
+- **Original**: No setting for cash policy.
+- **Revised**: Applying caching policy on model level
+- **Explanation*: Normally, whenever you query something from Looker, the query is run against your data warehouse and the result is brought back to Looker. In order for you to save costs and be more efficient, Looker caches your result for 1 hour by default. This feature can be manipulated and set to something like 24 hours — optimising performance with the benefit of saving you money.
+- **Action**: Usually we can add persist_for:max_cache_age or there is a way to not repeate code by creating datagroup.lkml file:
+```sql
+  datagroup: the24hourupdate {
+  
+  sql_trigger: SELECT CURDATE();;
+  
+  max_cache_age: “24 hour”
+  
+  }
+
+```
+
+- Add this file in explores:
+
+# Looker Explore File
+```lkml
+  include: "/_views/refined_view/daily_product_logistics.view.lkml"
+  include: "/_datagroup/my_datagroup.lkml"
+```
+
+# Add in view parameter datagroup_trigger
+```lkml
+ dimension: product_id {
+    type: string
+    sql: ${TABLE}.product_id ;;
+    datagroup_trigger: the24hourupdate
+    description: "Unique identifier for the product." #add description
+  }
+```
+      
 
 - **Original**: There was no differentiation between production and development environments in LookerML, and tables/columns lacked descriptions.
 
