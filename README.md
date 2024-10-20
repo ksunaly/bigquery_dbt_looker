@@ -100,7 +100,7 @@ orders as (
 
 ```
 
-- **Explanation**:  
+**Explanation**:  
   Implementing incremental logic enables the processing of only new or changed data, optimizing performance and reducing load times. This means that when new data is added, the model does not need to be rebuilt entirely; instead, it only updates the parts that have 
   changed.
 
