@@ -9,7 +9,7 @@
   By organizing the model into distinct stages, it becomes much easier to understand and manage.
   Each stage can have its own purpose, such as raw data processing, transformation, and final reporting.
   This structure not only clarifies the workflow but also makes it easier to troubleshoot and make changes, leading to a more efficient development process.
-  **Action**
+- **Action**
 1. Create dbt folder with medallion-architecture:
    A medallion architecture is a data design pattern used to logically organize data in a lakehouse, with the goal of incrementally and progressively improving the structure and quality of data as it flows through each layer of the architecture (from Bronze ⇒ Silver ⇒ 
    Gold layer tables).
@@ -36,22 +36,45 @@
 .
   **Source Definition**:
    - Create a `source.yml` file. This file contains the source definitions for all raw tables, pointing to where the raw data is located in your data warehouse. Centralizing your source configuration helps with data lineage and documentation.
+   - It is good idea to add also freshness funciton here.Adding a freshness test to your data pipeline makes sure that the data is current and accurate, which is important for making good decisions. It helps catch stale data and problems early,
+   - building trust in the  information.
+   -  Freshness tests also act as checks that alert teams when data isn’t updated as expected, helping to meet any rules about how timely data should be. Overall, they improve the quality and reliability of your data
+     ```yaml
+     sources:
+  - name: ecommerce 
+    description: ecommerce database
+    loader: Fivetran
+    database: fivetran_ingest
+    schema: ecommerce
+    freshness:
+      warn_after: { count: 24, period: hour }
+      error_after: { count: 48, period: hour }
+    loaded_at_field: _fivetran_synced
+    tables:
+      - name: orders
+        description: table of orders that were created
+      - name: fulfillments
+        description:  key events in the order fulfillment process. 
+      - name: agents
+        description: agents details
 
+    ```
+    
 **Gold Layer Setup**
 - Moved existing file with sql queries to gold folder
-- Created daily.product.logistics.yml file with description and tests of all columns in final table
+- Created daily.product.logistics.yml file with description
   
-  ## 2. Maintainability
-- **Original**: Uses `select *`, which can lead to issues if the source tables change.
-- **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
-- **Explanation**:  
-  Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
-   By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
-   **Action**
-  use column names for each table in each dbt models in select statement
+## 2. Maintainability
+  **Original**: Uses `select *`, which can lead to issues if the source tables change.
+  **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
+  **Explanation**:  
+    Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
+    By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
+  **Action**
+   Use column names for each table in each dbt models in select statement
 
 ## 3. Performance
-- 3.1 **Original**: Selected wrong strategy for perfomance
+- 3.1 **Original**: It could be wrong strategy for perfomance
   ```sql
   {{ config(materialized='table') }} 
 
@@ -78,9 +101,10 @@ orders as (
 ```
 
 - **Explanation**:  
-  Implemented incremental logic allows for processing only the new or changed data, optimizing performance and reducing load times.
+  Implementing incremental logic enables the processing of only new or changed data, optimizing performance and reducing load times. This means that when new data is added, the model does not need to be rebuilt entirely; instead, it only updates the parts that have 
+  changed.
 
-### 3.2 Original (in CTE, joined optimized code):
+- 3.2 **Original**: the code should be more optimized
 
 ```sql
 LEFT JOIN fulfillments AS packaged
@@ -97,7 +121,7 @@ GROUP BY 1, 2, 3, 4
 
 ```
 
-- **Revised**:
+- **Revised**: 
 
 ```sql
 LEFT JOIN fulfillments AS packaged
@@ -121,7 +145,8 @@ Moving the event name conditions to the join clause enhances performance by filt
 ## 4. Data Integrity
 - **Original**: No data quality checks
 - **Revised**: Added data tests to ensure all relationships are valid, helping maintain data integrity in yml.files. Also added `utils` and `expectation` packages.
-Example of tests:
+    - The utils package provides reusable functions that simplify common tasks, saving time and promoting consistency in the codebase. The expectation package allows for automated data quality checks, ensuring that the data meets specific standards. 
+-Example of tests:
 ```yaml
 - name: avg_contractor_days_to_pack
   description: "The average number of days it took for contractors to pack orders."
@@ -160,10 +185,80 @@ Example of tests:
 ## Improvements
 
 - **Macro Folder**: Added a macro folder in the dbt directory to help reuse code and simplify future changes. In the final table, added columns from macros to provide clarity.
+```sql
+  {% macro get_current_timestamp_utc() %}
+    TO_TIMESTAMP_NTZ(CONVERT_TIMEZONE('UTC', CURRENT_TIMESTAMP()))
+  {% endmacro %}
+final as (
+    select date_spine.date_day,
+        products.product_id,
+        products.product_name,
+        products.product_category,
+        products.product_subcategory,
+        coalesce(avg(days_to_pack), 0) as avg_days_to_pack, --added coalesce to handle situation with no sales
+        coalesce(avg(days_to_ship), 0) as avg_days_to_ship,  --added coalesce to handle situation with no sales
+        coalesce(avg(days_to_deliver), 0) as avg_days_to_deliver  --added coalesce to handle situation with no sales
+        coalesce(avg(case when is_us_customer then days_to_pack else null end), 0) as avg_us_days_to_pack, --added coalesce to handle situation with no sales
+        coalesce(avg(case when is_us_customer then days_to_ship else null end), 0) as avg_us_days_to_ship, --added coalesce to handle situation with no sales
+        coalesce(avg(case when is_us_customer then days_to_deliver else null end), 0) as avg_us_days_to_deliver,  --added coalesce to handle situation with no sales
+        coalesce(avg(case when has_contractor_support then days_to_pack else null end), 0) as avg_contractor_days_to_pack,  --added coalesce to handle situation with no sales
+        coalesce(avg(case when has_contractor_support then days_to_ship else null end), 0) as avg_contractor_days_to_ship,  --added coalesce to handle situation with no sales
+        coalesce(avg(case when has_contractor_support then days_to_deliver else null end), 0) as avg_contractor_days_to_deliver,  --added coalesce to handle situation with no sales
+         {{ get_current_timestamp() }} as current_timestamp_utc-- adding the current UTC timestamp from macros
+    from date_spine
+    cross join products --cross join is good here, as we need to see all records, even when there were no products sold
+    left join order_metrics
+        on date_spine.date_day = date(order_metrics.createdat)
+        and products.product_id = order_metrics.productid
+    group by 1,2,3,4,5
+)
+
+select 
+    final.date_day,
+    final.product_id,
+    final.product_name,
+    final.product_category,
+    final.product_subcategory,
+    final.avg_days_to_pack,
+    final.avg_days_to_ship,
+    final.avg_days_to_deliver,
+    final.avg_us_days_to_pack,
+    final.avg_us_days_to_ship,
+    final.avg_us_days_to_deliver,
+    final.avg_contractor_days_to_pack,
+    final.avg_contractor_days_to_ship,
+    final.avg_contractor_days_to_deliver,
+    final.current_timestamp_utc --new column 
+ from final
+
+```
+
 - **Pre-commit Hook**: Implemented a pre-commit hook to enforce code quality, ensuring each model has a description and passes linting before merging. This ensures models are well-documented and consistent.
+Please include a summary of the changes and the related issue. Please also include relevant motivation and context. List any dependencies that are required for this change.
+
+Fixes # (issue)
+
+## Type of Change
+
+Please delete options that are not relevant.
+
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
+
+## How Has This Been Tested?
+
+(Provide details about how your changes have been tested, including any relevant information about the testing process, frameworks used, and outcomes.)
+
+## Screenshots (if applicable):
+
+(If applicable, add screenshots to help explain your changes.)
+
+## Additional Changes
+
 - **GitHub Folder**: Added a `.github` folder with a pull request template for standardization.
 - **Workflow Creation**: Created a workflow for the pre-commit hook in GitHub to maintain consistency across team submissions.
-- **Spectacles Tests**: Implemented Spectacles tests for LookerML to automate testing of Looker data models.
 
 
 
@@ -179,3 +274,5 @@ Example of tests:
 
 ### Explanation
 Separating production from development in Looker enables safer testing and experimentation without affecting live data, making the process more controlled and secure. Adding descriptions to tables and columns improves documentation and usability, helping end-users understand the data structure and purpose of each field, leading to better data exploration and analysis.
+
+- **Spectacles Tests**: Implemented Spectacles tests for LookerML to automate testing of Looker data models.
