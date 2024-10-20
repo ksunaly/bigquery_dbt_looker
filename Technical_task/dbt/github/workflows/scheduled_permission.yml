@@ -1,0 +1,33 @@
+on:
+  push:
+    branches:
+      - main
+# on:
+#   schedule:
+#     # * is a special character in YAML so you have to quote this string
+#     - cron: "0 */12 * * *"
+obs:
+  permifrost:
+    runs-on:
+      labels: ubuntu-latest
+    defaults:
+      run:
+        working-directory: permifrost
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.4
+        with:
+          fetch-depth: 1
+
+      - name: Build Permifrost
+        run: make build-permifrost
+        env:
+          PERMISSION_BOT_USER: ${{ secrets.PERMISSION_BOT_USER }}
+          PERMISSION_BOT_ACCOUNT: ${{ secrets.PERMISSION_BOT_ACCOUNT }}
+          PERMISSION_BOT_WAREHOUSE: ${{ secrets.PERMISSION_BOT_WAREHOUSE }}
+          PERMISSION_BOT_PASSWORD: ${{ secrets.PERMISSION_BOT_PASSWORD }}
+          PERMISSION_BOT_DATABASE: ${{ secrets.PERMISSION_BOT_DATABASE }}
+          PERMISSION_BOT_ROLE: ${{ secrets.PERMISSION_BOT_ROLE }}
+
+      - name: Apply Permifrost Permissions
+        run: make permifrost-run
