@@ -366,8 +366,9 @@ obs:
 
 - **Original**: No setting for cash policy.
 - **Revised**: Applying caching policy on model level
-- **Explanation*: Normally, whenever you query something from Looker, the query is run against your data warehouse and the result is brought back to Looker. In order for you to save costs and be more efficient, Looker caches your result for 1 hour by default. This feature can be manipulated and set to something like 24 hours — optimising performance with the benefit of saving you money.
+- **Explanation**: Normally, whenever you query something from Looker, the query is run against your data warehouse and the result is brought back to Looker. In order for you to save costs and be more efficient, Looker caches your result for 1 hour by default. This feature can be manipulated and set to something like 24 hours — optimising performance with the benefit of saving you money.
 - **Action**: Usually we can add persist_for:max_cache_age or there is a way to not repeate code by creating datagroup.lkml file:
+***Create datagroup.lkml file
 ```sql
   datagroup: the24hourupdate {
   
@@ -379,15 +380,14 @@ obs:
 
 ```
 
-- Add this file in explores:
+***Add this file in explores***
 
-# Looker Explore File
 ```lkml
   include: "/_views/refined_view/daily_product_logistics.view.lkml"
   include: "/_datagroup/my_datagroup.lkml"
 ```
 
-# Add in view parameter datagroup_trigger
+ ***Add in view parameter datagroup_trigger***
 ```lkml
  dimension: product_id {
     type: string
@@ -396,7 +396,38 @@ obs:
     description: "Unique identifier for the product." #add description
   }
 ```
-      
+
+- **Original**: not a user-frinedly interface
+- **Revised**: added hidden and primary_key parameter, added group_label because of repetion average type
+- **Explanation**: u limit the number of views and dimensions within your explore. Keep useful information and hide unimportant dimensions for user_friendly interface. Missed primary_key parameter
+- **Action**
+  add hidden and primary key parameter for product id dimentsion
+```lkml
+   dimension: product_id {
+    type: string
+    sql: ${TABLE}.product_id ;;
+    datagroup_trigger: the24hourupdate # added cash policy
+    primary_key: yes # add primary key
+    hidden: yes # not necessary dimiension for client
+    description: "Unique identifier for the product." #add description
+```
+  add group_label parameter for each average measure
+```lkml
+     measure: average_days_to_pack {
+    group_label: "Average"
+    type: average
+    sql: ${avg_days_to_pack} ;;
+    description: "The average number of days it took to pack the product."
+  }
+
+  measure: average_days_to_ship {
+    group_label: "Average"
+    type: average
+    sql: ${avg_days_to_ship} ;;
+    description: "The average number of days it took to ship the product after it was packed."
+  }
+```
+
 
 - **Original**: There was no differentiation between production and development environments in LookerML, and tables/columns lacked descriptions.
 
@@ -404,7 +435,92 @@ obs:
   - Implemented environment separation in LookerML to distinguish between production and development instances, ensuring safer data handling.
   - Added clear descriptions for all tables and columns in the Looker view and explore files.
 
-### Explanation
+- **Explanation**:
 Separating production from development in Looker enables safer testing and experimentation without affecting live data, making the process more controlled and secure. Adding descriptions to tables and columns improves documentation and usability, helping end-users understand the data structure and purpose of each field, leading to better data exploration and analysis.
+```sql
+view: daily_product_logistics {
+  # Dynamically use the schema based on the user's environment attribute
+  sql_table_name: 
+    {% if _user_attributes['environment'] == 'prod' %}
+      `{{_user_attributes['dbt_schema']}}.daily_product_logistics`
+    {% else %}
+      `{{_user_attributes['sandbox_schema']}}.daily_product_logistics`
+    {% endif %} ;;
+```
 
 - **Spectacles Tests**: Implemented Spectacles tests for LookerML to automate testing of Looker data models.
+
+# spectacles.yml
+```sql
+tests:
+  - name: daily_product_logistics
+    description: "Tests for daily_product_logistics Explore"
+    table: daily_product_logistics
+
+    # Test for product_id
+    checks:
+      - name: product_id_not_null
+        description: "Ensure product_id is not null"
+        type: not_null
+        field: product_id
+
+      - name: product_id_unique
+        description: "Ensure product_id is unique"
+        type: unique
+        field: product_id
+
+    # Test for product_name
+      - name: product_name_not_null
+        description: "Ensure product_name is not null"
+        type: not_null
+        field: product_name
+
+    # Test for date_day
+    checks:
+      - name: date_day_not_null
+        description: "Ensure date_day is not null"
+        type: not_null
+        field: date_day
+      
+      - name: date_day_within_valid_range
+        description: "Ensure date_day is within a valid range"
+        type: expression_is_true
+        expression: "date_day >= '2020-01-01'"
+
+    # Tests for average_days_to_pack
+    checks:
+      - name: average_days_to_pack_not_null
+        description: "Ensure average_days_to_pack is not null"
+        type: not_null
+        field: average_days_to_pack
+
+      - name: average_days_to_pack_non_negative
+        description: "Ensure average_days_to_pack is non-negative"
+        type: expression_is_true
+        expression: "average_days_to_pack >= 0"
+
+ 
+    checks:
+      - name: average_days_to_ship_not_null
+        description: "Ensure average_days_to_ship is not null"
+        type: not_null
+        field: average_days_to_ship
+
+      - name: average_days_to_ship_non_negative
+        description: "Ensure average_days_to_ship is non-negative"
+        type: expression_is_true
+        expression: "average_days_to_ship >= 0"
+
+      - name: average_days_to_deliver_not_null
+        description: "Ensure average_days_to_deliver is not null"
+        type: not_null
+        field: average_days_to_deliver
+
+      - name: average_days_to_deliver_non_negative
+        description: "Ensure average_days_to_deliver is non-negative"
+        type: expression_is_true
+        expression: "average_days_to_deliver >= 0"
+```
+
+
+
