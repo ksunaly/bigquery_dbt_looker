@@ -65,12 +65,12 @@
   
   
 ## 2. Maintainability
-      **Original**: Uses `select *`, which can lead to issues if the source tables change.
-      **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
-      **Explanation**: Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
-        By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
-      **Action**
-        Use column names for each table in each dbt models in select statement
+  **Original**: Uses `select *`, which can lead to issues if the source tables change.
+  **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
+  **Explanation**: Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues.
+                   By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
+ **Action**
+  Use column names for each table in each dbt models in select statement
 
 ## 3. Performance
 - 3.1 **Original**: It could be wrong strategy for perfomance
@@ -449,8 +449,6 @@ view: daily_product_logistics {
 ```
 
 - **Spectacles Tests**: Implemented Spectacles tests for LookerML to automate testing of Looker data models.
-
-# spectacles.yml
 ```sql
 tests:
   - name: daily_product_logistics
