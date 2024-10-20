@@ -48,36 +48,77 @@
   use column names for each table in each .sql file in select statement
 
 ## 3. Performance
-- **Original**: The cross join between `date_spine` and `products` in gold/daily_product_logistics.sql can blow up the result set and slow down the query.
-- **Revised**: Replaced it with a more efficient inner join to keep the result set manageable and improve performance.
-- **Explanation**:  
-  Cross joins can create excessively large result sets, significantly impacting query performance and resource consumption. Switching to an inner join narrows down the data being processed, enhancing efficiency.
+- 3.1 **Original**: 
+  ```sql
+  {{ config(materialized='table') }}
+- **Revised**:
+  ```sql
+{{ config(materialized='incremental', unique_key='orderid') }}
+{% if is_incremental() %}
+    where createdat > (select max(createdat) from {{ this }})  -- Fetch only updated records
+{% endif %}
+- **Explanation**  Implemented incrincremental logic allows for processing only the new or changed data, optimizing performance and reducing load times
 
-- **Original**: {{ config(materialized='table') }}
-- **Revised**: Implemented incrincremental logic allows for processing only the new or changed data, optimizing performance and reducing load times.
-  
+-3.2 **Original**  in cte joined optimized code
+   ```sql
+joined as (
+    left join fulfillments as packaged
+    on orders.orderid = packaged.order_id
+    left join fulfillments as shipped
+    on orders.orderid = shipped.order_id
+    left join fulfillments as delivered
+    on orders.orderid = delivered.order_id
+    where packaged.event_name = 'order_packaged'
+    and shipped.event_name = 'order_shipped'
+    and delivered.event_name = 'order_delivered'
+    -- set the grain to one record per order
+    group by 1,2,3,4
+)
+
+- **Revised**:
+ ```sql
+left join fulfillments as packaged
+on orders.orderid = packaged.orderid
+and packaged.event_name = 'order_packaged' 
+left join fulfillments as shipped
+on orders.orderid = shipped.order_id
+and shipped.event_name = 'order_shipped'
+left join fulfillments as delivered
+on orders.orderid = delivered.order_id
+and delivered.event_name = 'order_delivered'
+-- set the grain to one record per order
+group by 1,2,3,4
+
+ - **Explanation**:  
+Moving the event name conditions to the join clause enhances performance by filtering records during the join operation, resulting in fewer records processed later in the pipeline
 
 
 ## 4. Data Integrity
-- **Original**: Lacked data quality checks, which could lead to potential issues.
-- **Revised**: Added data tests to ensure all relationships are valid, helping maintain data integrity. Also added `utils` and `expectation` packages.
+- **Original**: No data quality checks
+- **Revised**: Added data tests to ensure all relationships are valid, helping maintain data integrity in yml.files. Also added `utils` and `expectation` packages.
 - **Explanation**:  
   Ensuring data integrity is crucial for reliable reporting and analysis. By adding data quality checks, potential issues such as missing values or broken relationships can be caught early. The addition of `utils` and `expectation` packages enhances this process by providing standardized methods for testing and validation, maintaining trust in the data.
 
 ## 5. Best Practices
-- **Improvements**:  
-  - Added a macro to encapsulate complex logic, promoting code reuse and simplifying future updates.
-  - Implemented a pre-commit hook to enforce code quality, ensuring each model has a description and passes linting before merging.
-  - Added a `.github` folder with a pull request template to standardize contributions.
-  - Created a workflow for the pre-commit hook in GitHub to maintain consistency across team submissions.
-  - Implemented Spectacles tests for LookerML to automate testing of Looker data models.
-- **Explanation**:  
-  Macros promote code reuse and modularity, reducing duplication and simplifying future changes. Pre-commit hooks prevent low-quality code from being merged, ensuring models are well-documented and consistent. The GitHub PR template and workflow standardize code reviews, while Spectacles testing automates validation, improving overall reliability.
+## Improvements
 
-## 6. Looker Explorer File
+- **Macro Folder**: Added a macro folder in the dbt directory to help reuse code and simplify future changes. In the final table, added columns from macros to provide clarity.
+- **Pre-commit Hook**: Implemented a pre-commit hook to enforce code quality, ensuring each model has a description and passes linting before merging. This ensures models are well-documented and consistent.
+- **GitHub Folder**: Added a `.github` folder with a pull request template for standardization.
+- **Workflow Creation**: Created a workflow for the pre-commit hook in GitHub to maintain consistency across team submissions.
+- **Spectacles Tests**: Implemented Spectacles tests for LookerML to automate testing of Looker data models.
+
+
+
+---
+
+## Looker Explorer File
+
 - **Original**: There was no differentiation between production and development environments in LookerML, and tables/columns lacked descriptions.
-- **Revised**:  
+
+- **Revised**:
   - Implemented environment separation in LookerML to distinguish between production and development instances, ensuring safer data handling.
   - Added clear descriptions for all tables and columns in the Looker view and explore files.
-- **Explanation**:  
-  Separating production from development in Looker enables safer testing and experimentation without affecting live data, making the process more controlled and secure. Adding descriptions to tables and columns improves documentation and usability, helping end-users understand the data structure and purpose of each field, leading to better data exploration and analysis.
+
+### Explanation
+Separating production from development in Looker enables safer testing and experimentation without affecting live data, making the process more controlled and secure. Adding descriptions to tables and columns improves documentation and usability, helping end-users understand the data structure and purpose of each field, leading to better data exploration and analysis.
