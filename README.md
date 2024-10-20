@@ -79,6 +79,8 @@ WHERE packaged.event_name = 'order_packaged'
 -- set the grain to one record per order
 GROUP BY 1, 2, 3, 4
 
+```
+
 - **Revised**:
 
 ```sql
@@ -94,6 +96,7 @@ LEFT JOIN fulfillments AS delivered
 -- set the grain to one record per order
 GROUP BY 1, 2, 3, 4
 
+```
 
  - **Explanation**:  
 Moving the event name conditions to the join clause enhances performance by filtering records during the join operation, resulting in fewer records processed later in the pipeline
