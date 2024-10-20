@@ -65,26 +65,21 @@
   
   
 ## 2. Maintainability
- **Original**: Uses `select *`, which can lead to issues if the source tables change.
-
-**Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
-
-**Explanation**: 
-Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues. By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
-
-**Action**: 
+- **Original**: Uses `select *`, which can lead to issues if the source tables change.
+- **Revised**: Selected only the necessary columns to improve clarity and protect against unexpected changes.
+- **Explanation**: Using `select *` can introduce vulnerabilities if the underlying source tables change, potentially leading to unexpected results or performance issues. By selecting only the necessary columns, the code becomes cleaner and more intentional. This reduces the risk of breaking changes and simplifies future maintenance, as the impact of changes is more predictable.
+- **Action**: 
 Use column names for each table in each dbt model in the select statement.
 
 
 ## 3. Performance
-- 3.1 **Original**: It could be wrong strategy for perfomance
+ **Original**: It could be wrong strategy for perfomance
   ```sql
   {{ config(materialized='table') }} 
 
   ```
   
-  **Revised**: Select incremental materialization to imrpove perfomance.
-
+**Revised**: Select incremental materialization to imrpove perfomance.
 ```sql
 {{ config(materialized='incremental') }}
 with
@@ -107,8 +102,7 @@ orders as (
   Implementing incremental logic enables the processing of only new or changed data, optimizing performance and reducing load times. This means that when new data is added, the model does not need to be rebuilt entirely; instead, it only updates the parts that have 
   changed.
 
-- 3.2 **Original**: the code should be more optimized
-
+**Original**: the code should be more optimized
 ```sql
 LEFT JOIN fulfillments AS packaged
   ON orders.orderid = packaged.order_id
@@ -124,7 +118,7 @@ GROUP BY 1, 2, 3, 4
 
 ```
 
-- **Revised**: 
+**Revised**: 
 
 ```sql
 LEFT JOIN fulfillments AS packaged
@@ -141,7 +135,7 @@ GROUP BY 1, 2, 3, 4
 
 ```
 
- - **Explanation**:  
+**Explanation**:  
 Moving the event name conditions to the join clause enhances performance by filtering records during the join operation, resulting in fewer records processed later in the pipeline
 
 
