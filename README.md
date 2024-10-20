@@ -51,9 +51,8 @@
 - 3.1 **Original**: 
   ```sql
   {{ config(materialized='table') }} 
-   ```
+   
   - **Revised**:
-  ```sql
  {{ config(materialized='incremental', unique_key='orderid') }}
 
 ```
