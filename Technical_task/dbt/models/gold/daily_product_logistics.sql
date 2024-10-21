@@ -75,7 +75,7 @@ select
     min(delivered.timestamp) as delivered,
     min(packaged.agentid) as packaged_agentid,
     min(shipped.agentid) as shipped_agentid,
-    min(shipped.agentid) as delivered_agentid
+    min(delivered.agentid) as delivered_agentid --typo in alias, instead of shipped-delivered
 from orders
 left join fulfillments as packaged
 on orders.orderid = packaged.orderid
